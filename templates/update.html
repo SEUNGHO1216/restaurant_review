@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block head %}
+<!--    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>-->
+<script
+        src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<!--<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.css" rel="stylesheet">-->
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.js"></script>-->
+
+<script>
+
+    function info() {
+        let titles = $('#inputTitle').val()
+        let content = $('#summernote').val()
+        console.log(content)
+        if(titles == ""){
+            alert('제목을 입력해주세요')
+            return false;
+        }else if(content == ""){
+            alert('내용을 작성해주세요')
+            return false;
+        }
+        return true;
+
+    }
+    $(document).ready(function(){
+        $('#comment').keyup(function (e){
+           var comment=$(this).val();
+           $('#textLengthCheck').html("("+comment.length+"/100)");
+           if (comment.length>100){
+               alert('최대 100자까지 입력 가능합니다.')
+               $(this).val(comment.substring(0,100));
+               $('#textLengthCheck').html("(100/최대 100자)");
+           }
+        });
+    });
+
+</script>
+{% endblock %}
+{% block content %}
+<form method="POST" onsubmit="return info()" action="{{ url_for('update', idx=doc.id) }}">
+<div class="container col-lg-7 mt-5">
+    <div class="title-box">
+        <div class="mb-3 row">
+            <label for="inputTitle"><b>제목</b></label>
+            <div>
+                <input type="text" class="form-control" id="inputTitle" name="title" value="{{ doc.title }}">
+            </div>
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="writer"><b>작성자</b></label>
+        <div>
+            <input type="text" class="form-control" id="writer" name="writer" value="{{ session['id'] }}" disabled>
+        </div>
+    </div>
+     <div class="mb-3 row">
+         <label for="comment"><b>맛집 코멘트&nbsp;</b><span id="textLengthCheck">(0/100)</span></label>
+        <div>
+            <input type="text" class="form-control keyword" id="comment" name="comment"  value="{{ doc.comment }}" placeholder="게시글 카드에 들어갈 말을 작성하세요(100자 이하)" maxlength="100" required>
+        </div>
+    </div>
+    <span><b>본문</b></span>
+    <div>
+        <textarea id="summernote" name="contents">
+            {{ doc.content }}
+        </textarea>
+    </div>
+    <div class="text-end">
+        <button class="btn btn-outline-dark mt-3 text-end">게시물 수정</button>
+    </div>
+    <script>
+        $('#summernote').summernote({
+            placeholder: '내용을 입력하세요',
+            minHeight: null,             // 최소 높이
+            maxHeight: null,             // 최대 높이
+            focus: true,                  // 에디터 로딩후 포커스를 맞출지 여부
+            lang: "ko-KR",
+            tabsize: 2,
+            height: 500,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['fontname', 'fontsize', 'bold', 'italic', 'underline', 'clear']],
+                ['color', ['forecolor', 'color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video', 'hr']],
+                ['view', ['fullscreen', 'undo','redo','codeview', 'help']]
+            ],
+            fontNames: ['Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', '맑은 고딕', '궁서', '굴림체', '굴림', '돋움체', '바탕체'],
+            fontSizes: ['8', '9', '10', '11', '12', '14', '16', '18', '20', '22', '24', '28', '30', '36', '50', '72'],
+            callbacks: {
+                onImageUpload(files) {
+                    sendFile(files[0], data => {
+                        let imgNode = document.createElement("img");
+                        imgNode.setAttribute('src', data.url)
+                        console.log(imgNode)
+                        $(this).summernote('insertNode', imgNode);
+                    })
+                }
+            }
+        });
+        var sendFile = function (file, callback) {
+            var data;
+            data = new FormData();
+            data.append("file", file);
+            return $.ajax({
+                url: "/addImgSummer",
+                data: data,
+                cache: false,
+                contentType: false,
+                processData: false,
+                type: 'POST',
+                success: function (data) {
+                    return callback(data);
+                }
+            });
+        };
+
+    </script>
+</div>
+</form>
+{% endblock %}

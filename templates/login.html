@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script>
+    // $(document).ready(function(){
+    // })
+
+    function checkbox(){
+        if ($('#inputId').val()==""){
+            return alert('아이디를 입력하세요')
+        }else if($('#inputPassword').val()==""){
+            return alert('비밀번호를 입력하세요')
+        }
+
+    }
+</script>
+<style>
+    .container{
+        margin:auto;
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="container row col-lg-4 mt-5">
+    {% if msg %}
+    <div class="msg">
+        <h3>{{msg}}</h3>
+    </div>
+    {% endif %}
+    <form method="POST">
+        <h1>로그인</h1>
+
+        <div class="mb-3 row">
+            <label for="inputId" class="col-sm-2 col-form-label">아이디</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="inputId" name="id" placeholder="Id">
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label for="inputPassword" class="col-sm-2 col-form-label">비밀번호</label>
+            <div class="col-sm-10">
+                <input type="password" class="form-control" id="inputPassword" name="password" placeholder="Password">
+            </div>
+        </div>
+        <div class="text-end">
+            <button class="btn btn-outline-dark text-end" onclick="checkbox()">로그인</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

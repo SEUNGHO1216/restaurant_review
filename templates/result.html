@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+    <style>
+        .myresult{
+            margin:auto;
+        }
+        .btn-box{
+            margin-right: 10px;
+        }
+    </style>
+{% block content %}
+    <div class="container myresult col-lg-4 mt-5 text-center">
+        <h2>{{msg}}</h2>
+        <div class="btn-box mt-3">
+            <a href="/"><button class="btn btn-outline-dark">홈으로</button></a>
+            {% if not session['id'] %}
+                <a href="/login"><button class="btn btn-outline-dark">로그인</button></a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

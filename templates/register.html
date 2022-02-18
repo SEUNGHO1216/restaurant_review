@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script>
+    id=$('#inputId').val()
+    pw=$('#inputPassword').val()
+    function checkId(){
+        id=$('#inputId').val()
+        if (id==""){
+            alert('아이디를 입력하세요')
+            return false
+        }
+        $.ajax({
+            type:"POST",
+            url:"/idCheck",
+            data:{id:id},
+            success:function(response){
+                alert(response['msg'])
+            }
+        });
+    }
+    function checkbox(){
+        if ($('#inputId').val()==""){
+            alert('아이디를 입력하세요')
+        }else if($('#inputPassword').val()==""){
+            alert('비밀번호를 입력하세요')
+        }
+    }
+</script>
+<style>
+    .container{
+        margin:auto;
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="container row col-lg-4 mt-5">
+    {% if msg %}
+    <div class="msg">
+        <h3>{{msg}}</h3>
+    </div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('register') }}">
+        <h1>회원가입</h1>
+
+        <div class="mb-3 row">
+            <label for="inputId" class="col-sm-2 col-form-label">아이디</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" id="inputId" name="id" placeholder="Id">
+            </div>
+            <div class="col-sm-3">
+                <button type="button" onclick="checkId()" class="btn btn-primary">중복검사</button>
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label for="inputPassword" class="col-sm-2 col-form-label">비밀번호</label>
+            <div class="col-sm-7">
+                <input type="password" class="form-control" id="inputPassword" name="password" placeholder="Password">
+            </div>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-outline-dark text-end" onclick="checkbox()">회원가입</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

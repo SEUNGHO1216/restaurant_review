@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block head %}
+<style>
+    .container{
+        margin:auto;
+    }
+    .title-box{
+        background-color: gold;
+    }
+    .info-box{
+        background-color: whitesmoke;
+        display: flex;
+    }
+    .delbtn{
+        margin-top: 14px;
+
+    }
+</style>
+<script>
+    function like(){
+        alert("로그인 후에 '좋아요'를 누를 수 있습니다.")
+    }
+</script>
+{% endblock %}
+{% block content %}
+    <div class="container col-lg-7 mt-5 rounded-lg">
+        <div class="title-box mb-3">
+            <div class="text-center shadow p-2">
+                <div>
+                    <h1>{{ doc.title }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="info-box col-log-12 mb-3 shadow-sm p-1 mb-5 bg-light rounded">
+            <div class="row col-lg-3">
+                <label><b>작성자</b></label>
+                <div>
+                    <span><b>{{ doc.writer }}</b></span>
+                </div>
+            </div>
+             <div class="row col-lg-3">
+                <label><b>조회수</b></label>
+                <div>
+                    <span><b>{{ doc.view_cnt }}</b></span>
+                </div>
+            </div>
+            <div class="row col-lg-3">
+                <label><b>게시일</b></label>
+                <div>
+                    <span><b>{{ doc.pubdate }}</b></span>
+                </div>
+            </div>
+            <div class="row col-lg-3" id="likey-box">
+
+                <div>
+                    {% if session['id'] in doc.likey %}
+                        <label><b>좋아요 취소</b></label>
+                        <a href="/unlikey/{{doc.id}}"+><button>😢</button></a><span><b>{{ doc.likey|length }}</b></span>
+                    {% else %}
+                        {% if session['id'] %}
+                            <label><b>좋아요</b></label>
+                            <a href="/likey/{{doc.id}}"+><button id="likey-btn">❤</button></a><span><b>{{ doc.likey|length }}</b></span>
+                        {% else %}
+                            <label><b>좋아요</b></label>
+                            <button onclick="like()" >❤</button></a><span><b>{{ doc.likey|length }}</b></span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="content-box col-lg-12 mb-3">
+            <span><b>맛집 코멘트</b></span>
+            <div class="board-body col-lg-12 shadow p-2 mb-5 bg-body rounded">
+                {{ doc.comment }}
+            </div>
+            <span><b>본문</b></span>
+            <div class="board-body col-lg-12 shadow p-3 mb-5 bg-body rounded">
+                <!--<textarea id="contents" name="contents">-->{% autoescape false %}{{ doc.content }}{% endautoescape %}<!--</textarea>-->
+            </div>
+            <div class="text-end btns">
+                <a href="{{ url_for('index') }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">돌아가기</button></a>
+                {% if session['id'] == doc.writer %}
+                <a href="{{ url_for('update', idx=doc.id) }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">글수정</button></a>
+                <button type="button" class="btn btn-outline-danger delbtn" data-bs-toggle="modal" data-bs-target="#a">
+                    글삭제
+                </button>
+<!--                <a href="{{ url_for('delete', idx=doc.id) }}"><button type="button" class="btn btn-outline-danger mt-3 text-end">글삭제</button></a>-->
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="a" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"><b>게시글 삭제 알림</b></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5>정말로 삭제하시겠습니까?</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{{ url_for('delete', idx=doc.id, name=doc.writer) }}"><button class="btn btn-danger" style="font-weight: bold;">글삭제</button></a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
