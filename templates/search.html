@@ -66,6 +66,10 @@
                     <p class="likey">&nbsp;❤:{{ i.likey|length }}</p>
                 </div>
                 <p class="pubdate text-end">{{ i.pubdate }}</p>
+                {% if i.uptdate%}
+                <p class="pubdate text-end">{{ i.uptdate }}</p>
+                {% endif %}
+
             </div>
         </div>
     </div>
