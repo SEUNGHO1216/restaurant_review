@@ -58,8 +58,8 @@
                  class="card-img-top">
 
             <div class="card-body">
-                <a href="/detail/{{ i._id }}"><h5 class="card-title mb-3">{{ i.title }}</h5></a>
-                <a href="/detail/{{ i._id }}"><p class="card-text mb-3" id="content">{{ i.comment }}</p></a>
+                <a href="/detail/{{ i._id }}/{{ page }}"><h5 class="card-title mb-3">{{ i.title }}</h5></a>
+                <a href="/detail/{{ i._id }}/{{ page }}"><p class="card-text mb-3" id="content">{{ i.comment }}</p></a>
                 <p>{{ i.writer }}</p>
                 <div class="info">
                     <p class="viewCount">조회수:{{ i.view_cnt }} /</p>

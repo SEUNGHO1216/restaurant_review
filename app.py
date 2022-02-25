@@ -1,23 +1,27 @@
 import math
+import os
 
 import bcrypt
 import pymongo
 from bson import json_util
 from bson.objectid import ObjectId
 from bson.json_util import dumps
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, send_file
 from flask_bcrypt import Bcrypt
 import time
 from PIL import Image
 import re
-import requests
-from bs4 import BeautifulSoup
+from werkzeug.utils import secure_filename
+from pytz import timezone
+from datetime import datetime
+
 
 app = Flask(__name__)
 
 from pymongo import MongoClient
 client = MongoClient('mongodb+srv://test:sparta@cluster0.okxdx.mongodb.net/Cluster0?retryWrites=true&w=majority')
 db = client.dbreview
+
 
 app.secret_key = '19wjsck!!'
 
@@ -47,9 +51,7 @@ def boards():
         if boardsAll != "":
             print(boardsAll)
             return jsonify({'boards': dumps(boardsAll)})
-# @app.route('/searchmain')
-# def searchmain():
-#     return render_template('search.html')
+
 
 @app.route('/search', methods=["GET"])
 def search():
@@ -192,20 +194,40 @@ def upload():
             title=request.form['title']
             writer=session['id']
             contents=request.form['contents']
-
             a= re.findall("(<img[^>]+src\s*=\s*[\"']?([^>\"']+)[\"']?[^>]*>)",contents)
             if len(a)==0:
                 image="https://missioninfra.net/img/noimg/noimg_fac.gif"
             else:
                 image=a[0][1]
-            print(image)
-            # , {'src': re.compile("<img[^>]*src=[\"']?([^>\"']+)[\"']?[^>]*>")}
             comment=request.form['comment']
-            # con = re.sub(pattern='(<([^>]+)>)', repl='', string=contents)
             con = re.sub('<(/)?([a-zA-Z0-9]*)(\\s[a-zA-Z0-9]*=[^>]*)?(\\s)*(/)?>','',contents)
             con = re.sub('&nbsp;', ' ', con)
             print(con)
-            pubdate=time.strftime('%y%m%d_%H:%M:%S')
+            pubdate=datetime.now(timezone('Asia/Seoul')).strftime('%y%m%d_%H:%M:%S')
+            print('pubdate:',pubdate)
+
+            file=request.files.getlist("file")
+            print(file)
+            files = os.listdir('./static/files')
+            insertFile=[]
+            if len(file)!=0:
+                for i in file:
+                    if i.filename:
+                        i.save('./static/files/' + i.filename)
+                        insertFile.append(i.filename)
+                    else:
+                        print('empty file list')
+            else:
+                print('no inserted file')
+            mapPlace=request.form['inputPlace']
+            mapAddress=request.form['inputAddress']
+            mapUrl=request.form['inputUrl']
+            map={}
+            map['place']=mapPlace
+            map['address']=mapAddress
+            map['url']=mapUrl
+            print(map)
+
             if title =="" or contents =="<p><br></p>":
                 return jsonify({'msg':'입력오류'})
             print(type(title),writer,type(contents),pubdate)
@@ -218,10 +240,12 @@ def upload():
                 'noTagCon':con,
                 'view_cnt': 0,
                 'likey':[],
-                'pubdate':pubdate
+                'pubdate':pubdate,
+                'file':insertFile,
+                'map':map
             }
             boardsInsert=db.boards.insert_one(doc)
-            return redirect(url_for('detail',idx = boardsInsert.inserted_id))
+            return redirect(url_for('detail',idx = boardsInsert.inserted_id,page=1))
 
         # return redirect(url_for('upload'))
 
@@ -244,8 +268,8 @@ def addImgSummer():
     print(imgURL)
     return jsonify(url = imgURL)
 
-@app.route('/detail/<idx>',methods=['GET'])
-def detail(idx):
+@app.route('/detail/<idx>/<page>',methods=['GET'])
+def detail(idx,page):
     if db.boards.find_one({'_id':ObjectId(idx)}):
         boards_data = db.boards.find_one({'_id': ObjectId(idx)})
         view = boards_data.get('view_cnt')
@@ -261,17 +285,20 @@ def detail(idx):
                 'noTagCon' : boards_data.get('noTagCon'),
                 'view_cnt' : boards_data.get('view_cnt'),
                 'likey' : boards_data.get('likey'),
-                'pubdate' : boards_data.get('pubdate')
+                'pubdate' : boards_data.get('pubdate'),
+                'uptdate': boards_data.get('uptdate'),
+                'file' : boards_data.get('file'),
+                'map': boards_data.get('map')
             }
-            return render_template('detail.html', doc=doc)
+            return render_template('detail.html', doc=doc, page=page)
         # return render_template("detail.html")
     if not request.args.get("idx"):
         msg='게시물 정보 오류로 페이지 전환 이상 발생'
         return render_template('result.html',msg=msg)
 
 
-@app.route('/likey/<idx>')
-def likey(idx):
+@app.route('/likey/<idx>/<page>')
+def likey(idx, page):
     db.boards.update_one({'_id':ObjectId(idx)},{'$push' : {'likey':session['id']}})
     boards_data = db.boards.find_one({'_id': ObjectId(idx)})
     view=boards_data.get('view_cnt')
@@ -280,19 +307,19 @@ def likey(idx):
 
     # likey_cnt=len(db.boards.find_one({'_id':ObjectId(idx)})['likey'])
     # return jsonify({'likey_cnt':likey_cnt})
-    return redirect(url_for('detail', idx=idx))
+    return redirect(url_for('detail', idx=idx, page=page))
 
-@app.route('/unlikey/<idx>')
-def unlikey(idx):
+@app.route('/unlikey/<idx>/<page>')
+def unlikey(idx, page):
     db.boards.update_one({'_id':ObjectId(idx)},{'$pull':{'likey':session['id']}})
     boards_data = db.boards.find_one({'_id': ObjectId(idx)})
     view = boards_data.get('view_cnt')
     view -= 1
     db.boards.update_one({'_id': ObjectId(idx)}, {'$set': {'view_cnt': view}})
-    return redirect(url_for('detail', idx=idx))
+    return redirect(url_for('detail', idx=idx, page=page))
 
-@app.route('/update/<idx>', methods=["GET", "POST"])
-def update(idx):
+@app.route('/update/<idx>/<page>', methods=["GET", "POST"])
+def update(idx, page):
     boards_data = db.boards.find_one({'_id': ObjectId(idx)})
     if request.method == "POST":
         title=request.form['title']
@@ -305,11 +332,53 @@ def update(idx):
             image = a[0][1]
         con = re.sub('<(/)?([a-zA-Z0-9]*)(\\s[a-zA-Z0-9]*=[^>]*)?(\\s)*(/)?>', '', content)
         con = re.sub('&nbsp;', ' ', con)
-        pubdate = time.strftime('%y%m%d_%H:%M:%S')
-        print(type(pubdate))
-        print(title, comment, pubdate)
-        if title == "" or content == "<p><br></p>":
-            return jsonify({'msg': '입력오류'})
+        pubdate = datetime.now(timezone('Asia/Seoul')).strftime('%y%m%d_%H:%M:%S')
+        file = request.files.getlist('file')
+        filename= request.form.getlist('filename')
+        print('file:',file)
+        print('filename:',filename)
+        insertFile = []
+        if len(filename) != 0: #기존 파일 정보가 있는 상태에서 수정x(다른 파일 추가 x)
+            files = os.listdir('./static/files')
+            for i in filename:
+                if i in files:
+                    insertFile.append(i)
+            if len(file) != 0:
+                for i in file:
+                    if i.filename:
+                        i.save('./static/files/' + i.filename)
+                        insertFile.append(i.filename)
+                    else:
+                        print('empty file list')
+            else:
+                print('no inserted file')
+
+        else: #기존 파일 정보 지움
+            if len(file)==0: #기존거 지우고 새로운거 추가 x
+                insertFile=[]
+            else: #기존거 지우고 새로운거 추가 o
+                if len(file) != 0:
+                    for i in file:
+                        if i.filename:
+                            i.save('./static/files/' + i.filename)
+                            files = os.listdir('./static/files')
+                            if i.filename in files:
+                                insertFile.append(i.filename)
+                            else:
+                                print('no inserted file')
+                        else:
+                            print('empty file list')
+                else:
+                    print('no file')
+        mapPlace = request.form['inputPlace']
+        mapAddress = request.form['inputAddress']
+        mapUrl = request.form['inputUrl']
+        map = {}
+        map['place'] = mapPlace
+        map['address'] = mapAddress
+        map['url'] = mapUrl
+        print(map)
+
         doc = {
             'id': boards_data.get('_id'),
             'title': title,
@@ -320,10 +389,13 @@ def update(idx):
             'noTagCon': con,
             'view_cnt': boards_data.get('view_cnt'),
             'likey': boards_data.get('likey'),
-            'pubdate': pubdate
+            'pubdate': boards_data.get('pubdate'),
+            'uptdate':'수정:'+pubdate,
+            'file':insertFile,
+            'map': map
         }
         db.boards.update_one({'_id': ObjectId(idx)},{'$set':doc})
-        return render_template('detail.html', doc=doc)
+        return render_template('detail.html', doc=doc, page=page)
     doc = {
         'id': boards_data.get('_id'),
         'title': boards_data.get('title'),
@@ -333,14 +405,48 @@ def update(idx):
         'noTagCon': boards_data.get('noTagCon'),
         'view_cnt': boards_data.get('view_cnt'),
         'likey': boards_data.get('likey'),
-        'pubdate': boards_data.get('pubdate')
+        'pubdate': boards_data.get('pubdate'),
+        'uptdate': boards_data.get('uptdate'),
+        'file': boards_data.get('file'),
+        'map': boards_data.get('map')
     }
-    return render_template('update.html',doc=doc)
+    return render_template('update.html',doc=doc, page=page)
 
 @app.route("/delete/<idx>")
 def delete(idx):
     db.boards.delete_one({'_id': ObjectId(idx)})
     return redirect(url_for('index'))
+
+@app.route("/filedown", methods=["POST"])
+def filedown():
+    if request.method=="POST":
+        files=os.listdir('./static/files')
+        print('filename',request.form['file'])
+        # for i in files:
+        if request.form['file'] in files:
+            # if i == request.form['file']:
+                # print(i)
+            path="./static/files/"
+            return send_file(path+request.form['file'],
+                             attachment_filename= request.form['file'],
+                             as_attachment=True)
+        else:
+            msg='파일이 존재하지 않습니다.'
+            return render_template('result.html', msg=msg)
+
+@app.route('/deleteFile/<idx>', methods=['POST'])
+def deleteFile(idx):
+    print(idx)
+    if request.method=="POST":
+        files = os.listdir('./static/files')
+        for i in files:
+            if i == request.form['filename']:
+                print(request.form['filename'])
+                db.boards.update_one({'_id': ObjectId(idx)},{'$pull':{'file': i }})
+                os.remove('./static/files/'+request.form['filename'])
+                return jsonify({'msg':'삭제완료'})
+
+
 
 
 

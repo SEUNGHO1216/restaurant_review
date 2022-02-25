@@ -15,6 +15,13 @@
         margin-top: 14px;
 
     }
+    .filebox{
+        display: flex;
+    }
+    .fileread{
+        min-width: 350px;
+
+    }
 </style>
 <script>
     function like(){
@@ -49,17 +56,22 @@
                 <div>
                     <span><b>{{ doc.pubdate }}</b></span>
                 </div>
+                {% if doc.uptdate %}
+                <div>
+                    <span><b>{{ doc.uptdate }}</b></span>
+                </div>
+                {% endif %}
             </div>
             <div class="row col-lg-3" id="likey-box">
 
                 <div>
                     {% if session['id'] in doc.likey %}
                         <label><b>좋아요 취소</b></label>
-                        <a href="/unlikey/{{doc.id}}"+><button>😢</button></a><span><b>{{ doc.likey|length }}</b></span>
+                        <a href="/unlikey/{{doc.id}}/{{ page }}"+><button>😢</button></a><span><b>{{ doc.likey|length }}</b></span>
                     {% else %}
                         {% if session['id'] %}
                             <label><b>좋아요</b></label>
-                            <a href="/likey/{{doc.id}}"+><button id="likey-btn">❤</button></a><span><b>{{ doc.likey|length }}</b></span>
+                            <a href="/likey/{{doc.id}}/{{ page }}"+><button id="likey-btn">❤</button></a><span><b>{{ doc.likey|length }}</b></span>
                         {% else %}
                             <label><b>좋아요</b></label>
                             <button onclick="like()" >❤</button></a><span><b>{{ doc.likey|length }}</b></span>
@@ -77,14 +89,89 @@
             <div class="board-body col-lg-12 shadow p-3 mb-5 bg-body rounded">
                 <!--<textarea id="contents" name="contents">-->{% autoescape false %}{{ doc.content }}{% endautoescape %}<!--</textarea>-->
             </div>
+
+            <div class="input-group mt-3 mb-3">
+                {% for n in doc.file %}
+                <form action = "/filedown" method = "POST" enctype = "multipart/form-data" class="filebox">
+                    <input type = "text" name = "file" value="{{ n }}" class="form-control fileread" readonly/>
+                    <input type = "submit" value="파일받기" class="btn btn-outline-dark downbutton"/>
+                </form>
+                {% endfor %}
+            </div>
+            {% if doc.map['address'] %}
+            <span><b>지도</b></span>
+            <div id="map" style="width:100%;height:350px;"></div>
+            {% endif %}
+<!--            <div id="disqus_thread"></div>-->
+<!--            <script>-->
+<!--                /**-->
+<!--                 *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.-->
+<!--                 *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */-->
+
+<!--                var disqus_config = function () {-->
+<!--                this.page.url = 'http://sparta-restaurant.shop';  // Replace PAGE_URL with your page's canonical URL variable-->
+<!--                this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable-->
+<!--                };-->
+
+<!--                (function () { // DON'T EDIT BELOW THIS LINE-->
+<!--                    var d = document, s = d.createElement('script');-->
+<!--                    s.src = 'https://review-hpinx5silk.disqus.com/embed.js';-->
+<!--                    s.setAttribute('data-timestamp', +new Date());-->
+<!--                    (d.head || d.body).appendChild(s);-->
+<!--                })();-->
+<!--            </script>-->
+<!--            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by-->
+<!--                Disqus.</a></noscript>-->
+
+            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=	34dc520af852051eb432527a823c37c0&libraries=services"></script>
+            <script>
+            var mapContainer = document.getElementById('map'), // 지도를 표시할 div
+                mapOption = {
+                    center: new kakao.maps.LatLng(33.450701, 126.570667), // 지도의 중심좌표
+                    level: 3 // 지도의 확대 레벨
+                };
+
+            // 지도를 생성합니다
+            var map = new kakao.maps.Map(mapContainer, mapOption);
+
+            // 주소-좌표 변환 객체를 생성합니다
+            var geocoder = new kakao.maps.services.Geocoder();
+
+            // 주소로 좌표를 검색합니다
+
+            geocoder.addressSearch('{{ doc.map["address"] }}', function(result, status) {
+
+                // 정상적으로 검색이 완료됐으면
+                 if (status === kakao.maps.services.Status.OK) {
+
+                    var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+
+                    // 결과값으로 받은 위치를 마커로 표시합니다
+                    var marker = new kakao.maps.Marker({
+                        map: map,
+                        position: coords
+                    });
+
+                    // 인포윈도우로 장소에 대한 설명을 표시합니다
+                    var infowindow = new kakao.maps.InfoWindow({
+                        content: '<div style="width:170px;text-align:center;padding:6px 0;white-space: nowrap;overflow: auto;"><b>{{ doc.map['place'] }}</b><br>' +
+                            '<span style="font-size: 12px">{{ doc.map['address'] }}</span><br><a href="{{ doc.map['url'] }}">상세정보</a></div>'
+                    });
+                    infowindow.open(map, marker);
+
+                    // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+                    map.setCenter(coords);
+                }
+            });
+            </script>
+
             <div class="text-end btns">
-                <a href="{{ url_for('index') }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">돌아가기</button></a>
+                <a href="{{ url_for('index', page=page) }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">돌아가기</button></a>
                 {% if session['id'] == doc.writer %}
-                <a href="{{ url_for('update', idx=doc.id) }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">글수정</button></a>
+                <a href="{{ url_for('update', idx=doc.id, page=page) }}"><button type="button" class="btn btn-outline-dark mt-3 text-end">글수정</button></a>
                 <button type="button" class="btn btn-outline-danger delbtn" data-bs-toggle="modal" data-bs-target="#a">
                     글삭제
                 </button>
-<!--                <a href="{{ url_for('delete', idx=doc.id) }}"><button type="button" class="btn btn-outline-danger mt-3 text-end">글삭제</button></a>-->
                 {% endif %}
             </div>
         </div>

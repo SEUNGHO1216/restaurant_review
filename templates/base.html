@@ -73,7 +73,10 @@
 
         }
         select::-ms-expand{ display: none; } /* 익스플로러용 */
-
+        .mainpage-text{
+            text-decoration: none;
+            color:whitesmoke;
+        }
 
     </style>
     <script>
@@ -104,28 +107,28 @@
 </head>
 <body>
 <div class="top-box">
-    <h1>맛집 나눔</h1>
+    <a href="{{ url_for('index') }}" class="mainpage-text"><h1 >맛집 나눔</h1></a>
     <p class="mt-5">맛집에 죽고, 맛집에 사는</p>
     <p>맛집에 진심인 사람들</p>
 </div>
 <nav class="navbar navbar-light bg-light col-lg-7">
     <div class="container-fluid nav-text">
         <a href="{{ url_for('index') }}" class="navbar-brand">
-            <button class="btn btn-lg" style="background-color: goldenrod">홈으로</button>
+            <button class="btn btn-outline-secondary">목록</button>
         </a>
         <a href="{{ url_for('upload') }}" class="navbar-brand">
-            <button class="btn btn-lg" onclick="checkSession()" style="background-color: goldenrod">맛집 올리기</button>
+            <button class="btn btn-outline-secondary" onclick="checkSession()">맛집 올리기</button>
         </a>
         {% if session['id'] %}
         <a href="{{ url_for('logout') }}" class="navbar-brand">
-            <button class="btn btn-lg" style="background-color: goldenrod">로그아웃</button>
+            <button class="btn btn-outline-secondary">로그아웃</button>
         </a>
         {% else %}
         <a href="{{ url_for('login') }}" class="navbar-brand">
-            <button class="btn btn-lg" style="background-color: goldenrod">로그인</button>
+            <button class="btn btn-outline-secondary">로그인</button>
         </a>
         <a href="{{ url_for('register') }}" class="navbar-brand">
-            <button class="btn btn-lg" style="background-color: goldenrod">회원가입</button>
+            <button class="btn btn-outline-secondary">회원가입</button>
         </a>
         {% endif %}
         <form onsubmit="return checkSearch()" class="d-flex search-box" method="GET" action="{{ url_for('search') }}">
@@ -145,8 +148,10 @@
                 <option value="view_cnt">조회순</option>
             </select>
         </form>
+    </div>
 </nav>
 {% block content %}{% endblock %}
 
 </body>
 </html>
+
