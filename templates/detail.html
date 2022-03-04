@@ -22,19 +22,117 @@
         min-width: 350px;
 
     }
+    .map-fail-text{
+        font-size: 12px;
+        color: dimgray;
+    }
+    .reply-box{
+        display: flex;
+    }
+    .editing{
+        font-size: 16px;
+        color:dimgray;
+    }
+    .editing-box{
+        display: flex;
+        border-bottom: 4px dashed ;
+    }
+    .updateDt{
+        font-size: 12px;
+        color:dimgray;
+    }
+     .likey-btn {
+            border-style: hidden;
+            background-color: transparent;
+    }
+     .unliky_btn {
+        border-style: hidden;
+        background-color: transparent;
+    }
 </style>
 <script>
     function like(){
         alert("로그인 후에 '좋아요'를 누를 수 있습니다.")
     }
+    function loginReply(){
+        let id=$('#replyId').val()
+        let pw=$('#replyPassword').val()
+        $.ajax({
+            type:"POST",
+            url:"/loginReply",
+            data:{id:id, pw:pw},
+            success:function (response){
+                console.log(response['msg'])
+                window.location.reload();
+            }
+        })
+    }
+    function addReply(){
+        let con=$('#reply-text').val()
+        $.ajax({
+            type:"POST",
+            url:"/addReply/{{ doc.id }}/{{ page }}",
+            data:{con:con},
+            success:function (response){
+                alert(response['msg'])
+                window.location.reload();
+            }
+        })
+    }
+
+    // $(document).ready(function(){
+    //     $('#replyEdit').onclick(function ())
+    // })
+    function replyEdit(context,rid){
+        alert('\'수정\'은 댓글 맨 위 칸에서 수정 가능합니다.')
+        let replyId=rid
+        let cont=context
+        let html_temp=`
+                        <span class="editing"><b>수정 내용을 입력하세요!</b></span>
+                        <div class="form-inline mb-2">
+                            <span><b>{{ session['id'] }}</b></span>
+                        </div>
+                       <div class="editing-box">
+                             <div class="col-lg-10">
+                                <textarea class="form-control" id="replyEditText" rows="3">${cont}</textarea>
+                            </div>
+                            <div class="col-lg-2" id="edit-box">
+                                <button onclick="javascript:replyEditSave('${replyId}')" type="button"  id="replyEdit">완료</button>
+                                <a href="/detail/{{ doc.id }}/{{ page }}"><button id="replyDel">취소</button></a>
+                            </div>
+                        </div>
+                      `
+        $('#replyEdit-box').html(html_temp)
+
+    }
+
+    function replyEditSave(rid){
+        let ridInfo = rid
+        let con = $('#replyEditText').val()
+        $.ajax({
+            type:"POST",
+            url:"/editReply",
+            data:{con:con, rid:ridInfo},
+            success: function(response){
+                alert(response['msg'])
+                window.location.reload()
+            }
+
+        })
+
+    }
+
+
 </script>
 {% endblock %}
 {% block content %}
+
     <div class="container col-lg-7 mt-5 rounded-lg">
         <div class="title-box mb-3">
             <div class="text-center shadow p-2">
                 <div>
-                    <h1>{{ doc.title }}</h1>
+                    <span><h6>[{{ doc.category }}]</h6>
+                        <h1>{{ doc.title }}</h1></span>
                 </div>
             </div>
         </div>
@@ -67,14 +165,20 @@
                 <div>
                     {% if session['id'] in doc.likey %}
                         <label><b>좋아요 취소</b></label>
-                        <a href="/unlikey/{{doc.id}}/{{ page }}"+><button>😢</button></a><span><b>{{ doc.likey|length }}</b></span>
+                        <a href="/unlikey/{{doc.id}}/{{ page }}">
+                            <button class="unliky_btn">😢</button>
+                        </a>
+                        <span><b>{{ doc.likey|length }}</b></span>
                     {% else %}
                         {% if session['id'] %}
                             <label><b>좋아요</b></label>
-                            <a href="/likey/{{doc.id}}/{{ page }}"+><button id="likey-btn">❤</button></a><span><b>{{ doc.likey|length }}</b></span>
+                            <a href="/likey/{{doc.id}}/{{ page }}">
+                                <button class="likey-btn">💖</button>
+                            </a>
+                            <span><b>{{ doc.likey|length }}</b></span>
                         {% else %}
                             <label><b>좋아요</b></label>
-                            <button onclick="like()" >❤</button></a><span><b>{{ doc.likey|length }}</b></span>
+                            <button onclick="like()" >💖</button></a><span><b>{{ doc.likey|length }}</b></span>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -100,30 +204,77 @@
             </div>
             {% if doc.map['address'] %}
             <span><b>지도</b></span>
+            <p class="map-fail-text">👀지도가 잘 나오지 않는다면 입력하신 주소가 '{{ doc.map["address"] }}'이(가) 맞는지 확인해주세요! </p>
             <div id="map" style="width:100%;height:350px;"></div>
             {% endif %}
-<!--            <div id="disqus_thread"></div>-->
-<!--            <script>-->
-<!--                /**-->
-<!--                 *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.-->
-<!--                 *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */-->
 
-<!--                var disqus_config = function () {-->
-<!--                this.page.url = 'http://sparta-restaurant.shop';  // Replace PAGE_URL with your page's canonical URL variable-->
-<!--                this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable-->
-<!--                };-->
+            <div class="card mb-2">
+                <div class="card-header bg-light">
+                        <i class="fa fa-comment fa"></i> 댓글
+                </div>
+                <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                {% if session['id'] %}
+                                <div class="form-inline mb-2">
+                                    <label for="replyId"><i class="fa fa-user-circle-o fa-2x">작성자</i></label>
+                                    <input type="text" class="form-control ml-2" value="{{ session['id'] }}" id="replyId-logged" readonly>
+                                </div>
+                                <textarea class="form-control" id="reply-text" rows="3" placeholder="댓글입력" required></textarea>
+                                <button type="button" class="btn btn-dark mt-3" onclick="javascript:addReply();">댓글 게시</button>
+                                <hr>
+                                {% else %}
+                                <span>로그인 후 댓글을 남길 수 있습니다.</span>
+                                <div class="form-inline mb-2">
+                                    <label for="replyId"><i class="fa fa-user-circle-o fa-2x"></i></label>
+                                    <input type="text" class="form-control ml-2" placeholder="아이디를 입력하세요" name="replyId" id="replyId">
+                                    <label for="replyPassword" class="ml-4"><i class="fa fa-unlock-alt fa-2x"></i></label>
+                                    <input type="password" class="form-control ml-2" placeholder="비밀번호를 입력하세요" name="replyPassword" id="replyPassword">
+                                </div>
+                                <button type="button" class="btn btn-dark mt-3" onclick="javascript:loginReply();">로그인</button>
+                                <hr>
+                                {% endif %}
+                                 <div id="replyEdit-box"></div>
+                                <div id="reply-box">
+                                  {% if replies %}
+                                    {% for i in replies %}
+                                    <div class="form-inline mb-2">
+                                        <span><b>{{ i.writer }}</b></span>
+                                    </div>
+                                    <div id="reply-box2" class="reply-box">
+                                        <div class="col-lg-10">
+                                            <textarea class="form-control" id="replyText" rows="3" disabled>{% autoescape false %}{{ i.context }}{% endautoescape %}</textarea>
+                                        </div>
+                                        {% if session['id'] == i.writer %}
+                                        <div class="col-lg-2" id="edit-box">
+                                            <button onclick="javascript:replyEdit('{% autoescape false %}{{ i.context }}{% endautoescape %}','{{ i._id }}');" type="button"  id="replyEdit">수정</button>
+                                            <a href="/deleteReply/{{ i._id }}/{{ doc.id }}/{{ page }}"><button id="replyDel">삭제</button></a><br>
+                                            <span class="text-end">{{ i.pubdate }}</span><br>
+                                            {% if i.updateDt %}
+                                                  <span class="text-end updateDt">수정: {{ i.updateDt }}</span>
+                                            {% endif %}
 
-<!--                (function () { // DON'T EDIT BELOW THIS LINE-->
-<!--                    var d = document, s = d.createElement('script');-->
-<!--                    s.src = 'https://review-hpinx5silk.disqus.com/embed.js';-->
-<!--                    s.setAttribute('data-timestamp', +new Date());-->
-<!--                    (d.head || d.body).appendChild(s);-->
-<!--                })();-->
-<!--            </script>-->
-<!--            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by-->
-<!--                Disqus.</a></noscript>-->
+                                        </div>
+                                        {% else %}
+                                         <div class="col-lg-2" id="edit-box2">
+                                            <span class="text-end">{{ i.pubdate }}</span><br>
+                                            {% if i.updateDt %}
+                                                  <span class="text-end updateDt">수정: {{ i.updateDt }}</span>
+                                            {% endif %}
 
-            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=	34dc520af852051eb432527a823c37c0&libraries=services"></script>
+                                        </div>
+                                        {% endif %}
+
+                                    </div>
+                                    <hr>
+                                    {% endfor %}
+                                {% endif %}
+                                </div>
+                            </li>
+                        </ul>
+                </div>
+            </div>
+            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=   34dc520af852051eb432527a823c37c0&libraries=services"></script>
             <script>
             var mapContainer = document.getElementById('map'), // 지도를 표시할 div
                 mapOption = {
@@ -188,7 +339,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="{{ url_for('delete', idx=doc.id, name=doc.writer) }}"><button class="btn btn-danger" style="font-weight: bold;">글삭제</button></a>
+                    <a href="{{ url_for('delete', idx=doc.id, page=page) }}"><button class="btn btn-danger" style="font-weight: bold;">글삭제</button></a>
                 </div>
             </div>
         </div>

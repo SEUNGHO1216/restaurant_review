@@ -16,6 +16,13 @@
     function info() {
         let titles = $('#inputTitle').val()
         let content = $('#summernote').val()
+        const query = 'input[name="category"]:checked';
+        const selectedEls = document.querySelectorAll(query);
+        let result = '';
+        selectedEls.forEach((el) => {
+            result += el + ' ';
+        });
+        document.getElementById('result').innerText = result;
         console.log(content)
         if (titles == "") {
             alert('제목을 입력해주세요')
@@ -310,6 +317,34 @@
             <div>
                 <input type="text" class="form-control keyword" id="comment" name="comment"
                        placeholder="게시글 카드에 들어갈 말을 작성하세요(100자 이하)" maxlength="100" required>
+            </div>
+        </div>
+         <div class="category">
+            <div class="mb-3 row">
+                <span for="category"><label><b>분류</b></label>
+
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="한식" name="category">한식
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox2" value="중식" name="category">중식
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox3" value="일식" name="category">일식
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox4" value="양식" name="category">양식
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox5" value="분식" name="category">분식
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox6" value="디저트" name="category">디저트
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="inlineCheckbox7" value="기타" name="category">기타
+                    </div>
+                </span>
             </div>
         </div>
         <span><b>본문</b></span>

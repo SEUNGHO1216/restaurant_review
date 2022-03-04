@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100&display=swap" rel="stylesheet">
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,6 +18,7 @@
             crossorigin="anonymous"></script>
     {% block head %}{% endblock %}
     <style>
+        *{font-family: 'Noto Sans KR', sans-serif;}
         .top-box {
             height: 300px;
 
@@ -61,7 +65,8 @@
         }
 
         .sorting-box{
-            width: 80px; height: 40px;
+            width: 80px;
+            height: 40px;
 
             /*border: 3px solid #666;*/
 
@@ -69,13 +74,13 @@
 
             background-color: whitesmoke;
 
-
-
         }
         select::-ms-expand{ display: none; } /* 익스플로러용 */
-        .mainpage-text{
-            text-decoration: none;
-            color:whitesmoke;
+
+        .mainpage-logo{
+            height: 150px;
+            width:  150px;
+            position: center;
         }
 
     </style>
@@ -107,9 +112,16 @@
 </head>
 <body>
 <div class="top-box">
-    <a href="{{ url_for('index') }}" class="mainpage-text"><h1 >맛집 나눔</h1></a>
-    <p class="mt-5">맛집에 죽고, 맛집에 사는</p>
-    <p>맛집에 진심인 사람들</p>
+    <p>
+        <a href="{{ url_for('index') }}" >
+        <img src="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FDriXe%2FbtrutlHUKoE%2Fm2yO1isyGnTrvQ265mJQ4K%2Fimg.png"
+            alt="logo" class="mainpage-logo"/>
+        </a>
+    </p>
+    <p class="mt-1">맛집에 진심인 사람들</p>
+    {% if session['id'] %}
+    <span>'{{ session['id'] }}'님 안녕하세요!</span>
+    {% endif %}
 </div>
 <nav class="navbar navbar-light bg-light col-lg-7">
     <div class="container-fluid nav-text">
@@ -122,6 +134,9 @@
         {% if session['id'] %}
         <a href="{{ url_for('logout') }}" class="navbar-brand">
             <button class="btn btn-outline-secondary">로그아웃</button>
+        </a>
+         <a href="{{ url_for('deleteUser') }}" class="navbar-brand">
+            <button class="btn btn-outline-secondary">탈퇴</button>
         </a>
         {% else %}
         <a href="{{ url_for('login') }}" class="navbar-brand">
@@ -136,6 +151,7 @@
                 <option value="전체" selected }>전체</option>
                 <option value="title">제목</option>
                 <option value="noTagCon">내용</option>
+                <option value="category">분류</option>
             </select>
             <input class="form-control me-2 input-box" type="search" id="search" placeholder="검색어 입력" name="textbox"
                    aria-label="Search">
@@ -154,4 +170,3 @@
 
 </body>
 </html>
-

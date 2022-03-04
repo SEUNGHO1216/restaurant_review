@@ -40,7 +40,12 @@
         background-color: #198754;
         border-color: #198754;
     }
-
+    .writer{
+        text-align: end;
+    }
+    a{
+    text-decoration-line : none;
+    }
 </style>
 <script>
 
@@ -58,12 +63,16 @@
                  class="card-img-top">
 
             <div class="card-body">
-                <a href="/detail/{{ i._id }}/{{ page }}"><h5 class="card-title mb-3">{{ i.title }}</h5></a>
+                 <a href="/detail/{{ i._id }}/{{ page }}">
+                    <h9 class="category_color">[{{ i.category }}]</h9>
+                    <h5 class="card-title mb-3">{{ i.title }}</h5>
+                </a>
                 <a href="/detail/{{ i._id }}/{{ page }}"><p class="card-text mb-3" id="content">{{ i.comment }}</p></a>
-                <p>{{ i.writer }}</p>
+                <p class="writer">{{ i.writer }}</p>
                 <div class="info">
-                    <p class="viewCount">조회수:{{ i.view_cnt }} /</p>
-                    <p class="likey">&nbsp;❤:{{ i.likey|length }}</p>
+                    <p class="viewCount">👀{{ i.view_cnt }}
+                        <span class="likey">&nbsp;💖{{ i.likey|length }}</span>
+                    </p>
                 </div>
                 <p class="pubdate text-end">{{ i.pubdate }}</p>
                 {% if i.uptdate%}

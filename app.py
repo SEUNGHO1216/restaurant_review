@@ -45,9 +45,6 @@ def index():
 @app.route('/boards')
 def boards():
         boardsAll = list(db.boards.find().sort('_id',-1))
-        # boardsAll = list(db.boards.find({}).sort({'_id':-1}))
-        # json.loads(json_util.dumps(data))
-        # db.getCollection('wow').find({}).sort({_id: -1}) 내림차순 조회
         if boardsAll != "":
             print(boardsAll)
             return jsonify({'boards': dumps(boardsAll)})
@@ -81,12 +78,14 @@ def search():
         result = list(db.boards.find({
             '$or':[
                 {'title': {'$regex':textbox}},
-                {'noTagCon':{'$regex': textbox}}]
+                {'noTagCon':{'$regex': textbox}},
+                {'category':{'$regex': textbox}}]
         }).skip((page-1)*limit).limit(limit).sort([(sortbox, pymongo.DESCENDING),('_id', pymongo.DESCENDING)]))
         resultLength = list(db.boards.find({
             '$or': [
                 {'title': {'$regex': textbox}},
-                {'noTagCon': {'$regex': textbox}}]
+                {'noTagCon': {'$regex': textbox}},
+                {'category':{'$regex': textbox}}]
         }).sort([(sortbox, pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]))
         print(result)
         total_count = len(resultLength)
@@ -166,8 +165,11 @@ def login():
             id = user_info["id"]
             pw = user_info["pw"]
 
+
+
             if bcrypt.checkpw(input_pw.encode('utf-8'),pw):
                 session['id'] = id
+
                 msg = '로그인 성공!'
                 return redirect(url_for('index'))
             else:
@@ -175,6 +177,62 @@ def login():
             return render_template('login.html',msg=msg)
 
     return render_template('login.html',msg=msg)
+@app.route('/loginReply', methods=["POST"])
+def loginReply():
+    if request.method=="POST":
+        input_id = request.form['id']
+        input_pw = request.form['pw']
+        if input_id=="" or input_pw=="":
+            msg='아이디와 비밀번호를 입력하세요!'
+            return jsonify({'msg':msg})
+
+        user_info = db.users.find_one({'id': input_id})
+
+        if not user_info :
+            msg='아이디 정보가 없습니다.'
+            return jsonify({'msg':msg})
+        else:
+            id = user_info["id"]
+            pw = user_info["pw"]
+            if bcrypt.checkpw(input_pw.encode('utf-8'),pw):
+                session['id'] = id
+                msg = '로그인이 완료되었습니다!'
+                return jsonify({'msg':msg})
+            else:
+                msg = '비밀번호를 잘못 입력하셨습니다.'
+            return jsonify({'msg':msg})
+@app.route('/addReply/<idx>/<page>',methods=['POST'])
+def addReply(idx,page):
+    if request.method=="POST":
+        context = request.form['con']
+        context=context.replace("\n","   ")
+        print(list(context))
+        doc={
+            'writer': session['id'],
+            'context': context,
+            'pubdate' : datetime.now(timezone('Asia/Seoul')).strftime('%y%m%d_%H:%M:%S')
+        }
+        replyInfo = db.replies.insert_one(doc)
+        db.boards.update_one({'_id':ObjectId(idx)},{'$addToSet':{'rid':replyInfo.inserted_id}})
+        db.users.update_one({'id':session['id']},{'$addToSet':{'rid':replyInfo.inserted_id}})
+        return jsonify({'msg': '댓글 추가 완료했습니다.'})
+
+@app.route('/editReply',methods=['POST'])
+def editReply():
+    if request.method=="POST":
+        context = request.form['con']
+        context = context.replace("\n", "   ")
+        rid = request.form['rid']
+        print(context, rid)
+        replyInfo=db.replies.find_one({'_id':ObjectId(rid)})
+        doc={
+            'writer': session['id'],
+            'context': context,
+            'pubdate' : replyInfo.get('pubdate'),
+            'updateDt' : datetime.now(timezone('Asia/Seoul')).strftime('%y%m%d_%H:%M:%S')
+        }
+        db.replies.update_one({'_id':ObjectId(rid)},{'$set':doc})
+        return jsonify({'msg': '댓글 수정 완료했습니다.'})
 
 @app.route('/logout')
 def logout():
@@ -194,6 +252,8 @@ def upload():
             title=request.form['title']
             writer=session['id']
             contents=request.form['contents']
+            category = request.form['category']
+            print('category:',category)
             a= re.findall("(<img[^>]+src\s*=\s*[\"']?([^>\"']+)[\"']?[^>]*>)",contents)
             if len(a)==0:
                 image="https://missioninfra.net/img/noimg/noimg_fac.gif"
@@ -227,24 +287,33 @@ def upload():
             map['address']=mapAddress
             map['url']=mapUrl
             print(map)
+            # dbUser=db.users.find_one({'id':session['id']})
+            # userId=dbUser.get('_id')
+            # print(userId)
 
             if title =="" or contents =="<p><br></p>":
                 return jsonify({'msg':'입력오류'})
             print(type(title),writer,type(contents),pubdate)
             doc={
+
                 'title':title,
                 'writer':writer,
                 'comment':comment,
                 'content':contents,
+                'category':category,
                 'image': image,
                 'noTagCon':con,
                 'view_cnt': 0,
                 'likey':[],
                 'pubdate':pubdate,
                 'file':insertFile,
-                'map':map
+                'map':map,
+                # 'userId': userId
             }
             boardsInsert=db.boards.insert_one(doc)
+
+            db.users.update_one({'id':session['id']},{'$addToSet': {'bid':boardsInsert.inserted_id}})
+
             return redirect(url_for('detail',idx = boardsInsert.inserted_id,page=1))
 
         # return redirect(url_for('upload'))
@@ -288,10 +357,14 @@ def detail(idx,page):
                 'pubdate' : boards_data.get('pubdate'),
                 'uptdate': boards_data.get('uptdate'),
                 'file' : boards_data.get('file'),
-                'map': boards_data.get('map')
+                'map': boards_data.get('map'),
+                'category':boards_data.get('category')
             }
-            return render_template('detail.html', doc=doc, page=page)
-        # return render_template("detail.html")
+        if boards_data.get('rid'):
+            reply_list=list(db.replies.find({'_id':{'$in': boards_data.get('rid')}}))
+            print(reply_list)
+            return render_template('detail.html', doc=doc, page=page, replies=reply_list)
+        return render_template('detail.html', doc=doc, page=page)
     if not request.args.get("idx"):
         msg='게시물 정보 오류로 페이지 전환 이상 발생'
         return render_template('result.html',msg=msg)
@@ -370,6 +443,7 @@ def update(idx, page):
                             print('empty file list')
                 else:
                     print('no file')
+        category = request.form['category']
         mapPlace = request.form['inputPlace']
         mapAddress = request.form['inputAddress']
         mapUrl = request.form['inputUrl']
@@ -392,11 +466,12 @@ def update(idx, page):
             'pubdate': boards_data.get('pubdate'),
             'uptdate':'수정:'+pubdate,
             'file':insertFile,
-            'map': map
+            'map': map,
+            'category': category
         }
         db.boards.update_one({'_id': ObjectId(idx)},{'$set':doc})
         return render_template('detail.html', doc=doc, page=page)
-    doc = {
+    doc = { #get방식일 경우
         'id': boards_data.get('_id'),
         'title': boards_data.get('title'),
         'writer': boards_data.get('writer'),
@@ -408,14 +483,49 @@ def update(idx, page):
         'pubdate': boards_data.get('pubdate'),
         'uptdate': boards_data.get('uptdate'),
         'file': boards_data.get('file'),
-        'map': boards_data.get('map')
+        'map': boards_data.get('map'),
+        'category': boards_data.get('category')
     }
     return render_template('update.html',doc=doc, page=page)
 
-@app.route("/delete/<idx>")
-def delete(idx):
-    db.boards.delete_one({'_id': ObjectId(idx)})
+@app.route("/deleteUser")
+def deleteUser():
+    userinfo=db.users.find_one({'id':session['id']})
+    if userinfo.get('bid'):
+        print(userinfo.get('bid'))
+        bidList=db.boards.remove({'_id':{'$in':userinfo.get('bid')}}) #여기까지만 하면 나중에 사용자 게시물 전체지우기 가능
+        db.users.delete_one({'id':session['id']})
+    if userinfo.get('rid'):
+        print(userinfo.get('rid'))
+        db.replies.remove({'_id': {'$in': userinfo.get('rid')}})  # 여기까지만 하면 나중에 사용자 댓글 전체지우기 가능
+        db.users.delete_one({'id': session['id']})
+    logout()
     return redirect(url_for('index'))
+
+@app.route("/delete/<idx>/<page>")
+def delete(idx,page):
+    userinfo=db.users.find_one({'id':session['id']})
+    boardinfo=db.boards.find_one({'_id':ObjectId(idx)})
+    print('boardinfo:',boardinfo)
+    replyinfo=list(db.replies.find({'_id':{'$in':boardinfo.get('rid')}}))
+    print('replyinfo:',replyinfo)
+    if userinfo.get('bid'): #게시물 지우면 그 작성자자 게시물 리스트에서 지움
+        db.users.update_one({'id':session['id']},{'$pull':{'bid':ObjectId(idx)}})
+    if boardinfo.get('rid'): #게시물 지우면 거기에 달려있던 댓글 정보 db에서 지움
+        for i in replyinfo:
+            db.users.update_one({'id': i.get('writer')}, {'$pull': {'rid': i.get('_id')}}) # 유저에게 등록돼있던 댓글 정보도 db에서 제거
+        db.replies.remove({'_id':{'$in': boardinfo.get('rid')}})
+    db.boards.delete_one({'_id': ObjectId(idx)}) #게시글 삭제
+    return redirect(url_for('index', page=page))
+
+@app.route("/deleteReply/<idr>/<idb>/<page>") #댓글 id와 댓글이 속한 게시물 id 가져옴
+def deleteReply(idr,idb, page):
+    db.boards.update_one({'_id':ObjectId(idb)},{'$pull':{'rid':ObjectId(idr)}}) #게시글에 저장돼있던 댓글 리스트에서 제거
+    replyInfo = db.replies.find_one({'_id':ObjectId(idr)})
+    writer = replyInfo.get('writer')
+    db.users.update_one({'id':writer},{'$pull':{'rid':ObjectId(idr)}}) #유저에 저장돼있던 댓글 리스트에서 제거
+    db.replies.delete_one({'_id':ObjectId(idr)}) #댓글삭제
+    return redirect(url_for('detail',idx=idb,page=page))
 
 @app.route("/filedown", methods=["POST"])
 def filedown():
