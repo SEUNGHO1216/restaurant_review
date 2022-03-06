@@ -16,13 +16,7 @@
     function info() {
         let titles = $('#inputTitle').val()
         let content = $('#summernote').val()
-        const query = 'input[name="category"]:checked';
-        const selectedEls = document.querySelectorAll(query);
-        let result = '';
-        selectedEls.forEach((el) => {
-            result += el + ' ';
-        });
-        document.getElementById('result').innerText = result;
+
         console.log(content)
         if (titles == "") {
             alert('제목을 입력해주세요')

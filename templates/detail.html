@@ -274,7 +274,7 @@
                         </ul>
                 </div>
             </div>
-            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=   34dc520af852051eb432527a823c37c0&libraries=services"></script>
+            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=34dc520af852051eb432527a823c37c0&libraries=services"></script>
             <script>
             var mapContainer = document.getElementById('map'), // 지도를 표시할 div
                 mapOption = {
@@ -306,7 +306,7 @@
                     // 인포윈도우로 장소에 대한 설명을 표시합니다
                     var infowindow = new kakao.maps.InfoWindow({
                         content: '<div style="width:170px;text-align:center;padding:6px 0;white-space: nowrap;overflow: auto;"><b>{{ doc.map['place'] }}</b><br>' +
-                            '<span style="font-size: 12px">{{ doc.map['address'] }}</span><br><a href="{{ doc.map['url'] }}">상세정보</a></div>'
+                            '<span style="font-size: 12px">{{ doc.map['address'] }}</span><br><a href="{{ doc.map['url'] }}" target="_blank">상세정보</a></div>'
                     });
                     infowindow.open(map, marker);
 

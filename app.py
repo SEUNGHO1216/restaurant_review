@@ -253,7 +253,12 @@ def upload():
             writer=session['id']
             contents=request.form['contents']
             category = request.form['category']
-            print('category:',category)
+            print('category:', request.form['category'])
+            if category:
+                categ=category
+            else:
+                categ='미선택'
+
             a= re.findall("(<img[^>]+src\s*=\s*[\"']?([^>\"']+)[\"']?[^>]*>)",contents)
             if len(a)==0:
                 image="https://missioninfra.net/img/noimg/noimg_fac.gif"
@@ -300,7 +305,7 @@ def upload():
                 'writer':writer,
                 'comment':comment,
                 'content':contents,
-                'category':category,
+                'category':categ,
                 'image': image,
                 'noTagCon':con,
                 'view_cnt': 0,
@@ -444,6 +449,10 @@ def update(idx, page):
                 else:
                     print('no file')
         category = request.form['category']
+        if category:
+            categ=category
+        else:
+            categ='미선택'
         mapPlace = request.form['inputPlace']
         mapAddress = request.form['inputAddress']
         mapUrl = request.form['inputUrl']
@@ -467,7 +476,7 @@ def update(idx, page):
             'uptdate':'수정:'+pubdate,
             'file':insertFile,
             'map': map,
-            'category': category
+            'category': categ
         }
         db.boards.update_one({'_id': ObjectId(idx)},{'$set':doc})
         return render_template('detail.html', doc=doc, page=page)
